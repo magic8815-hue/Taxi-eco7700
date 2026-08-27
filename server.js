@@ -14,6 +14,10 @@ io.on('connection', (socket) => {
     io.emit('driverLocation', data);
   });
 
+socket.on('driverLocation', (data) => {
+  io.emit('driverLocation', data);
+});
+
   // 1. Створення замовлення диспетчером -> розсилка водіям
   socket.on('createOrder', (orderData) => {
     console.log('Нове замовлення:', orderData);
