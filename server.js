@@ -1,46 +1,41 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const cors = require('cors');
 
 const app = express();
+app.use(cors());
+
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
 
 io.on('connection', (socket) => {
-  console.log('Нове підключення:', socket.id);
+  console.log('Клієнт підключився:', socket.id);
 
-  // Оновлення геопозиції водія
-  socket.on('updateLocation', (data) => {
+  // Передача координат водія диспетчеру та усім іншим
+  socket.on('driverLocation', (data) => {
     io.emit('driverLocation', data);
   });
 
-socket.on('driverLocation', (data) => {
-  io.emit('driverLocation', data);
-});
-
-  // 1. Створення замовлення диспетчером -> розсилка водіям
-  socket.on('createOrder', (orderData) => {
-    console.log('Нове замовлення:', orderData);
-    io.emit('newOrder', orderData);
+  // Чат (Диспетчер <-> Водій)
+  socket.on('sendMessage', (data) => {
+    io.emit('receiveMessage', data);
   });
 
-  // 2. Водій прийняв замовлення -> сповіщаємо диспетчера
-  socket.on('acceptOrder', (data) => {
-    console.log(`Замовлення ${data.orderId} прийнято водієм ${data.driverId}`);
-    io.emit('orderAccepted', data);
-  });
-
-  // 3. Чат -> пересилка повідомлень усім
-  socket.on('sendMessage', (msgData) => {
-    console.log('Повідомлення в чаті:', msgData);
-    io.emit('receiveMessage', msgData);
+  // Нове замовлення
+  socket.on('createOrder', (data) => {
+    io.emit('newOrder', data);
   });
 
   socket.on('disconnect', () => {
-    console.log('Відключено:', socket.id);
+    console.log('Клієнт відключився:', socket.id);
   });
 });
 
-server.listen(3000, '0.0.0.0', () => {
-  console.log('🚀 Сервер таксі запущено на порту 3000');
-});
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Сервер працює на порту ${PORT}`));
